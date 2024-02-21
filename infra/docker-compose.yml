@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15.3-alpine3.18
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - ../.env
+
+  redis:
+    image: redis:7-alpine
+
+  app:
+    build: ../
+    restart: always
+    volumes:
+      - ..:/device_statistic_analysis
+    depends_on:
+      - postgres
+    entrypoint: ['python', 'infra/entrypoint.py', '-p', '--app']
+    env_file:
+      - ../.env
+    ports:
+      - '8000:8000'
+
+  worker:
+    build: ../
+    entrypoint: ['python', 'infra/entrypoint.py', '-p', '--workers']
+    volumes:
+      - ..:/device_statistic_analysis
+    env_file:
+      - ../.env
+    depends_on:
+      - redis
+      - app
+
+
+volumes:
+  postgres_data:
